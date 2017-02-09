@@ -383,14 +383,16 @@ set(LIBPYTHON_FROZEN_SOURCES
   ${SRC_DIR}/Python/importlib_external.h
   ${SRC_DIR}/Python/importlib.h
 )
+#message(FATAL_ERROR "LIBPYTHON_FROZEN_SOURCES: ${LIBPYTHON_FROZEN_SOURCES}")
+
 add_custom_command(
   OUTPUT ${LIBPYTHON_FROZEN_SOURCES}
-  COMMAND
-    ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_freeze_importlib>
+  COMMAND _freeze_importlib
+   # ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_freeze_importlib>
       ${SRC_DIR}/Lib/importlib/_bootstrap_external.py
       ${SRC_DIR}/Python/importlib_external.h
-  COMMAND
-    ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_freeze_importlib>
+  COMMAND _freeze_importlib
+    # ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_freeze_importlib>
       ${SRC_DIR}/Lib/importlib/_bootstrap.py
       ${SRC_DIR}/Python/importlib.h
   DEPENDS
@@ -399,9 +401,20 @@ add_custom_command(
     ${SRC_DIR}/Lib/importlib/_bootstrap.py
 )
 
+
+
+
+
+#message("LIBPYTHON_OMIT_FROZEN_SOURCES: ${LIBPYTHON_OMIT_FROZEN_SOURCES}")
+#string(GENEX_STRIP "$<TARGET_FILE:_freeze_importlib>" freeze_target_file)
+#message( "$<TARGET_FILE:_freeze_importlib>: ${freeze_target_file}")
+#message(FATAL_ERROR "CMAKE_CROSSCOMPILING_EMULATOR: ${CMAKE_CROSSCOMPILING_EMULATOR}")
+
 # This is a convenience target allowing to regenerate
 # the frozen sources.
 add_custom_target(freeze_modules DEPENDS ${LIBPYTHON_FROZEN_SOURCES})
+#message(FATAL_ERROR "LIBPYTHON_FROZEN_SOURCES: ${LIBPYTHON_FROZEN_SOURCES}")
+
 
 endif()
 
@@ -437,9 +450,12 @@ endif()
 
 # Build python libraries
 function(add_libpython name type install component)
+    #message("INCLUDE_BUILD_DIR: ${INCLUDE_BUILD_DIR}\nPYCONFIG_BUILD_DIR: ${PYCONFIG_BUILD_DIR}\nSRC_DIR/Python: ${SRC_DIR}/Python")
+    #message(FATAL_ERROR "name: ${name}\ntype: ${type}\nLIBPYTHON_SOURCES: ${LIBPYTHON_SOURCES}\nLIBPYTHON_TARGET_LIBRARIES: ${LIBPYTHON_TARGET_LIBRARIES}")
+
     add_library(${name} ${type} ${LIBPYTHON_SOURCES})
     target_link_libraries(${name} ${LIBPYTHON_TARGET_LIBRARIES})
-
+    target_include_directories(${name} PRIVATE ${INCLUDE_BUILD_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
     if(MSVC)
         # Explicitly disable COMDAT folding. Note that this was not required
         # in the original "pcbuild.sln" solution file because it was side effect
@@ -487,11 +503,18 @@ if(BUILD_SHARED)
             APPEND PROPERTY COMPILE_DEFINITIONS WITH_NEXT_FRAMEWORK)
     endif()
 
-    set(targetname "libpython3-shared")
+   set(targetname "libpython3-shared")
+
+   #  get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+  #  foreach(dir ${dirs})
+  #    message(STATUS "dir='${dir}'")
+  #  endforeach()
+  #  message(FATAL_ERROR "inspect include directories")
 
     if(IS_PY3 AND MSVC)
         # XXX Add BuildPython3_dDef
 
+       # message(FATAL_ERROR "is py3 and msvc")
         # Generate 'python3stub.def'
         set(pythonstub_def ${PROJECT_BINARY_DIR}/${LIBPYTHON_ARCHIVEDIR}/${CMAKE_CFG_INTDIR}/python3stub.def)
         add_custom_command(
@@ -515,6 +538,7 @@ if(BUILD_SHARED)
             INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/${LIBPYTHON_LIBDIR}
         )
         add_dependencies(${targetname} generate_libpythonstub_def)
+
 
         # Build 'python3stub.lib' before linking 'python3.dll'
         set(python3stub_lib ${PROJECT_BINARY_DIR}/${LIBPYTHON_ARCHIVEDIR}/${CMAKE_CFG_INTDIR}/python3stub.lib)
