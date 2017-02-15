@@ -443,6 +443,9 @@ endif()
 
 # Build python libraries
 function(add_libpython name type install component)
+    if(NOT _TARGET)
+        set(_TARGET PYTHON_TARGET)
+    endif()
     add_library(${name} ${type} ${LIBPYTHON_SOURCES})
     target_link_libraries(${name} ${LIBPYTHON_TARGET_LIBRARIES})
 
@@ -466,7 +469,7 @@ function(add_libpython name type install component)
     endif()
 
     # Export target
-    set_property(GLOBAL APPEND PROPERTY PYTHON_TARGETS ${name})
+    set_property(GLOBAL APPEND PROPERTY _TARGETS ${name})
 
     if(install)
         install(TARGETS ${name} EXPORT PythonTargets
@@ -478,7 +481,7 @@ function(add_libpython name type install component)
     endif()
 endfunction()
 
-if(BUILD_SHARED)
+if(BUILD_LIBPYTHON_SHARED)
     add_libpython(libpython-shared SHARED 1 Runtime)
     set_target_properties(libpython-shared PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_ARCHIVEDIR}
@@ -564,7 +567,7 @@ if(BUILD_SHARED)
 
 endif()
 
-if(BUILD_STATIC)
+if(NOT BUILD_LIBPYHTON_SHARED)
     add_libpython(libpython-static STATIC ${INSTALL_DEVELOPMENT} Development)
     if(HAVE_TARGET_COMPILE_DEFINITIONS)
         target_compile_definitions(libpython-static PUBLIC Py_NO_ENABLE_SHARED)
@@ -582,3 +585,4 @@ if(BUILD_STATIC)
             COMPONENT Development)
     endif()
 endif()
+
